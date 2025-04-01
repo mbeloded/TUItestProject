@@ -173,13 +173,7 @@ extension MainViewController {
     private func updateUIWithRoute(_ route: Route?) {
         guard let route = route else { return }
         resultLabel.text = "Total Price: \(route.totalPrice) €"
-
-        mapView.removeOverlays(mapView.overlays)
-
-        let coordinates = route.connections.map { $0.coordinates.from.coordinate } + [route.connections.last!.coordinates.to.coordinate]
-        let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
-        mapView.addOverlay(polyline)
-        mapView.setVisibleMapRect(polyline.boundingMapRect, edgePadding: .init(top: 20, left: 20, bottom: 20, right: 20), animated: true)
+        routeDrawer.showRoute(route)
     }
 
 }
