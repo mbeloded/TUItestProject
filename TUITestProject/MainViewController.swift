@@ -13,6 +13,8 @@ final class MainViewController: UIViewController {
     private let viewModel = RouteViewModel()
     private var subscriptions = Set<AnyCancellable>()
 
+    private var routeDrawer: MapRouteDrawer!
+
     private let fromField = UITextField()
     private let toField = UITextField()
     private let resultLabel = UILabel()
@@ -43,6 +45,8 @@ extension MainViewController {
             view.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
+        
+        routeDrawer = MapRouteDrawer(mapView: mapView)
 
         suggestionsContainer.translatesAutoresizingMaskIntoConstraints = false
         suggestionsContainer.backgroundColor = .clear
@@ -163,7 +167,7 @@ extension MainViewController {
         viewModel.toCity = cities.first { $0.name.caseInsensitiveCompare(toText) == .orderedSame }
 
         viewModel.findRoute()
-        drawRouteBetweenCities(from: fromText, to: toText)
+        routeDrawer.drawRouteBetweenCities(from: fromText, to: toText)
     }
 
     private func updateUIWithRoute(_ route: Route?) {
@@ -178,52 +182,6 @@ extension MainViewController {
         mapView.setVisibleMapRect(polyline.boundingMapRect, edgePadding: .init(top: 20, left: 20, bottom: 20, right: 20), animated: true)
     }
 
-    private func drawRouteBetweenCities(from cityName1: String, to cityName2: String) {
-        let geocoder = CLGeocoder()
-        let group = DispatchGroup()
-
-        var coord1: CLLocationCoordinate2D?
-        var coord2: CLLocationCoordinate2D?
-
-        group.enter()
-        geocoder.geocodeAddressString(cityName1) { placemarks, _ in
-            coord1 = placemarks?.first?.location?.coordinate
-            group.leave()
-        }
-
-        group.enter()
-        geocoder.geocodeAddressString(cityName2) { placemarks, _ in
-            coord2 = placemarks?.first?.location?.coordinate
-            group.leave()
-        }
-
-        group.notify(queue: .main) {
-            guard let from = coord1, let to = coord2 else {
-                print("⚠️ Failed to find coordinates for cities")
-                return
-            }
-
-            self.mapView.removeAnnotations(self.mapView.annotations)
-            self.mapView.removeOverlays(self.mapView.overlays)
-
-            let fromAnnotation = MKPointAnnotation()
-            fromAnnotation.title = cityName1
-            fromAnnotation.coordinate = from
-
-            let toAnnotation = MKPointAnnotation()
-            toAnnotation.title = cityName2
-            toAnnotation.coordinate = to
-
-            self.mapView.addAnnotations([fromAnnotation, toAnnotation])
-
-            let polyline = MKPolyline(coordinates: [from, to], count: 2)
-            self.mapView.addOverlay(polyline)
-
-            self.mapView.setVisibleMapRect(polyline.boundingMapRect,
-                                           edgePadding: .init(top: 40, left: 40, bottom: 40, right: 40),
-                                           animated: true)
-        }
-    }
 }
 
 // MARK: - Delegates
